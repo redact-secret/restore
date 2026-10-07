@@ -1,0 +1,18 @@
+[package]
+name = "redact-secret-restore"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Bounded, authority-controlled reconstruction of reversible tokens"
+publish = false
+
+[lib]
+name = "redact_secret_restore"
+path = "src/lib.rs"
+
+[features]
+default = []
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

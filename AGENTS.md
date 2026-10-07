@@ -8,9 +8,9 @@ contracts, implementation, tests, or workflows. Read the current issue and its
 parent epic for issue-driven work. The README API is conceptual, not frozen.
 
 `redact-secret/restore` is the Rust controlled reconstruction engine for the
-Redact Secret ecosystem. It is private and under development. At this update,
-there is no Rust crate or executable test suite; #2 establishes that foundation.
-Recheck the tree rather than assuming this status remains unchanged.
+Redact Secret ecosystem. It is private and under development. A dependency-free synchronous Rust crate and synthetic authority test suites
+are now present. Real vault integration remains separately unqualified; consult
+`docs/readiness.md` and recheck current evidence before asserting support.
 
 ```text
 token scan -> RestorePlan -> authority preflight -> consume / commit

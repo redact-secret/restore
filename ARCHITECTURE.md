@@ -227,3 +227,28 @@ Before public release:
 - persistent and in-memory integrations must be independently qualified,
 - fuzzing must cover token scanning and output reconstruction,
 - performance and allocation baselines must exist.
+
+## 13. Initial synchronous implementation
+
+The crate now implements request validation, a borrowed immutable RestorePlan,
+bulk RestoreAuthority interaction, and pre-sized one-pass output. `restore_plan`
+accepts a prebuilt plan without rescanning; it always preflights anew.
+The host supplies tenant/principal/session, sink/purpose, captures, and paths.
+Structural string validation is not authentication.
+
+The authority trait hands off exactly one owned string per occurrence following
+committed consume, in plan order. The authority is trusted for value association
+and authorization; the engine checks completeness and output bounds. Plans cannot
+be externally forged or mutated. All output reservations precede copying values;
+only a complete result is returned. Checked output failures after consume report
+Committed and do not roll back budgets. Preflight cannot reserve a use.
+
+The scanner follows the pinned vault marker grammar with Unicode 17 Cf data,
+including Unicode casefold long-s in the marker. It does not normalize source
+bytes. Whitespace/control insertions that erase the recognizable marker remain
+ordinary text, matching that grammar; this is not arbitrary tamper detection.
+
+[Authority decisions](docs/authority-semantics.md) define race/retry/expiry/budget
+and sync abandonment semantics. Actual async and persistent-backend qualification
+are absent. [Readiness](docs/readiness.md) separates engine evidence, test-authority
+models, and missing real vault support. Native dependencies remain empty.

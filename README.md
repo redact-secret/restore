@@ -105,7 +105,7 @@ build restore plan
 preflight entire request
       |
       v
-authority grants + values
+opaque request-bound grant
       |
       v
 consume / commit according to contract
@@ -117,40 +117,54 @@ pre-size outputs
 one-pass reconstruction
 ```
 
-## Conceptual API
+## Synchronous API
 
-The API is not yet frozen.
-
-A likely direction is:
+The dependency-free Rust crate exports validated borrowed requests/plans, the
+bulk authority trait, bounded errors, and complete results. This v0.1 engine
+contract is a candidate vault interoperability boundary; the TypeScript sibling
+has no native Rust authority implementation yet. See
+[authority semantics](docs/authority-semantics.md) and
+[qualification/readiness](docs/readiness.md).
 
 ```rust
-pub struct RestoreRequest<'a> {
-    pub sink: &'a str,
-    pub purpose: &'a str,
-    pub fields: &'a [RestoreField<'a>],
-}
+use redact_secret_restore::{restore, Limits, RestoreAuthority, RestoreError,
+    RestoreRequest, RestoreResult};
 
-pub trait RestoreAuthority {
-    type Grant;
-
-    fn preflight(
-        &self,
-        request: &RestorePlan<'_>,
-    ) -> Result<Self::Grant, RestoreError>;
-
-    fn consume(
-        &mut self,
-        grant: Self::Grant,
-    ) -> Result<ResolvedValues, RestoreError>;
-}
-
-pub fn restore<A: RestoreAuthority>(
+fn trusted_host_restore<A: RestoreAuthority>(
     request: &RestoreRequest<'_>,
     authority: &mut A,
-) -> Result<RestoreResult, RestoreError>;
+) -> Result<RestoreResult, RestoreError> {
+    restore(request, authority, Limits::default())
+}
 ```
 
-The final contract may use a different split depending on persistent-vault transaction semantics.
+`RestoreRequest` carries a host-supplied `TrustedContext` (tenant, principal,
+session, sink, purpose), capture references, and fields with path/text. The engine
+validates structure; the authority authenticates/authorizes the context.
+`RestorePlan::build` scans once. `restore_plan` executes a prebuilt immutable plan
+with fresh eligibility checks. Preflight returns no plaintext and consumes no
+uses. Consume receives the grant and same plan; only committed success hands off
+complete occurrence-ordered values. Duplicate tokens consume per occurrence.
+
+No output escapes on error. A post-consume output failure has `Committed` state;
+uses are not refunded. An `Indeterminate` authority error requires reconciliation
+rather than blind retries. There is no public async, cancellation, streaming, or
+context-free `restore(text)` API. Structured fields can contain free text only
+under their explicit authority-bound sink/path context.
+
+## Checks
+
+```sh
+CARGO_BUILD_JOBS=1 cargo fmt --all --check
+CARGO_BUILD_JOBS=1 cargo clippy --offline --all-targets --all-features -- -D warnings
+CARGO_BUILD_JOBS=1 cargo test --offline --all-features
+CARGO_BUILD_JOBS=1 cargo run --offline --release --example property_corpus
+```
+
+The native runtime has no third-party dependencies, serialization, network,
+subprocess, detector, storage, or crypto requirement. Optional development fuzzing
+uses libfuzzer-sys; see [fuzz strategy](docs/fuzzing.md). See
+[benchmarking](docs/benchmarking.md) for performance/allocation commands.
 
 ## Performance contract
 

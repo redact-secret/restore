@@ -148,3 +148,27 @@ Documentation must clearly distinguish:
 - implemented controls,
 - tested controls,
 - qualified runtime profiles.
+
+## Initial engine evidence and residual risks
+
+The synchronous engine implements bounded planning, bulk authority ordering, and
+application-visible atomic reconstruction with safe result/error formatting.
+See [readiness](docs/readiness.md) for executed checks and unqualified profiles.
+These controls do not authenticate caller context or protect a hostile authority.
+
+Consume success precedes output construction. Output-limit/allocation failure or
+process abandonment after commit may burn uses without returning plaintext.
+Committed/Indeterminate failures must not trigger blind one-use retries; there is
+no rollback or receipt plaintext replay. No public async cancellation API exists.
+
+Output/scanner reserve failures use bounded AllocationFailed errors where handled.
+Some standard collection and authority allocations can abort on process OOM;
+this is not comprehensive recoverable allocation failure. Request/output bounds
+cannot limit an authority's own value allocations before handoff. Hosts must
+bound their authority and route returned fields to the authorized destination.
+No memory erasure, crash-dump, swap, or whole-runtime protection is claimed.
+
+The scanner detects the canonical case-insensitive marker with Unicode Cf
+insertions. Tampering that destroys this recognizable marker is not guaranteed
+to be rejected; it yields no token lookup unless a marker remains. Token-shaped
+replacement values are inserted literally and never recursively restored.
